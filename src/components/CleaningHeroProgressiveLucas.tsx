@@ -189,7 +189,7 @@ export default function Cleaning(){
   return (
     <div className={UI.page}>
       <div className="max-w-6xl mx-auto space-y-4">
-        <Hero onSubmit={onSubmit} onQuickAdd={onQuickAdd} />
+        <Hero onSubmit={onSubmit} onQuickAdd={()=>{ setEditing(null); setShowForm(true) }} />
         <Section title={`Cleaning overview • ${new Date().toLocaleDateString(undefined,{month:'short', day:'numeric'})}`}>
           <div className="divide-y divide-slate-200/80 rounded-xl overflow-hidden">
             <div>
@@ -269,7 +269,7 @@ export default function Cleaning(){
         <RoomDetail room={selected} onClose={()=>setSelected(null)} onMarkCleaned={onMarkCleaned} />
         <AnimatePresence>
           {showForm && (
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-30 bg-black/20">
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50 bg-black/20">
               <RoomForm initial={editing ?? undefined} onCancel={()=>{ setShowForm(false); setEditing(null) }} onSave={(row)=>{
                 setRooms(arr=> { const i=arr.findIndex(x=> x.id===row.id); if(i>=0){ const copy=[...arr]; copy[i]=row; return copy } return [row, ...arr] })
                 setShowForm(false); setEditing(null)

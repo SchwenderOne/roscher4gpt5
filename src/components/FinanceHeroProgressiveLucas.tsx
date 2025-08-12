@@ -200,9 +200,7 @@ export default function Finance(){
       <HeroFinance name="Lucas" balance={lucas} onSubmit={(q)=>{
         const m = q.match(/(\d+[.,]?\d*)/); if(m){ const amt=parseFloat(m[1].replace(',','.'))
           onAdd({ id:`t${Math.random().toString(36).slice(2)}`, date:new Date().toISOString().slice(0,10), category:'Other', amount:amt, payer:'Lucas', split:{ Lucas:0.5, Alex:0.5 }, note:q, status:'paid' })
-        }}} onQuickAdd={()=>{
-          const amt = 10; onAdd({ id:`t${Math.random().toString(36).slice(2)}`, date:new Date().toISOString().slice(0,10), category:'Other', amount:amt, payer:'Lucas', split:{ Lucas:0.5, Alex:0.5 }, note:'Quick add', status:'paid' })
-        }} />
+        }}} onQuickAdd={()=>{ setEditingTx(null); setShowTxForm(true) }} />
       <Section title={`Finance overview • ${new Date().toLocaleDateString(undefined,{month:'short', day:'numeric'})}`} action={<div className="flex gap-2"><button onClick={()=>{ setEditingTx(null); setShowTxForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add tx</button><button onClick={()=>{ setEditingBill(null); setShowBillForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add bill</button></div>}>
         <div className="divide-y divide-slate-200/80 rounded-xl overflow-hidden">
           <div>
@@ -280,14 +278,14 @@ export default function Finance(){
       <TransactionDetail tx={selected} onClose={()=>setSelected(null)} onDelete={onDelete} />
       <AnimatePresence>
         {showTxForm && (
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-30 bg-black/20">
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50 bg-black/20">
             <TransactionForm initial={editingTx ?? undefined} people={people} onCancel={()=>{ setShowTxForm(false); setEditingTx(null) }} onSave={(row)=>{ onSaveTx(row); setShowTxForm(false); setEditingTx(null) }} />
           </motion.div>
         )}
       </AnimatePresence>
       <AnimatePresence>
         {showBillForm && (
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-30 bg-black/20">
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-50 bg-black/20">
             <BillForm initial={editingBill ?? undefined} onCancel={()=>{ setShowBillForm(false); setEditingBill(null) }} onSave={(row)=>{ onSaveBill(row); setShowBillForm(false); setEditingBill(null) }} />
           </motion.div>
         )}
