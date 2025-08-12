@@ -71,14 +71,14 @@ function Hero({ onSubmit, onQuickAdd }:{ onSubmit: (q: string) => void; onQuickA
   return (
     <div className="relative overflow-hidden rounded-3xl" style={{ height: 240 }}>
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage: `linear-gradient(to bottom, rgba(15,23,42,0.25), rgba(15,23,42,0.35)), url(${bg})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
       />
-      <button onClick={onQuickAdd} className={`absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-white shadow-sm ${UI.ring}`} aria-label="Quick add room">
+      <button onClick={onQuickAdd} className={`absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 hover:bg-white shadow-sm ${UI.ring}`} aria-label="Quick add room">
         <Plus className="h-5 w-5" />
       </button>
       <div className="relative h-full p-6 md:p-8 flex flex-col justify-end">

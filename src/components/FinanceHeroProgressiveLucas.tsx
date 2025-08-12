@@ -41,8 +41,8 @@ function HeroFinance({ name, onSubmit, onQuickAdd, balance }:{ name:string; onSu
   const [q,setQ]=useState(''); const [recording,setRecording]=useState(false)
   const bg='https://images.unsplash.com/photo-1552083974-186346191183?q=80&w=2000&auto=format&fit=crop'
   return (<div className="relative overflow-hidden rounded-3xl" style={{height:280}}>
-    <div className="absolute inset-0" style={{backgroundImage:`linear-gradient(to bottom, rgba(15,23,42,0.28), rgba(15,23,42,0.36)), url(${bg})`, backgroundSize:'cover', backgroundPosition:'center'}}/>
-    <button onClick={onQuickAdd} className={`absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-white shadow-sm ${UI.ring}`} aria-label="Quick add"><Plus className="h-5 w-5"/></button>
+    <div className="absolute inset-0 pointer-events-none" style={{backgroundImage:`linear-gradient(to bottom, rgba(15,23,42,0.28), rgba(15,23,42,0.36)), url(${bg})`, backgroundSize:'cover', backgroundPosition:'center'}}/>
+    <button onClick={onQuickAdd} className={`absolute top-4 right-4 z-10 p-2 rounded-full bg-white/80 hover:bg-white shadow-sm ${UI.ring}`} aria-label="Quick add"><Plus className="h-5 w-5"/></button>
     <div className="relative h-full p-6 md:p-8 flex flex-col justify-end">
       <div className="text-slate-100/90 text-2xl md:text-4xl font-semibold drop-shadow-sm">Finances, {name}</div>
       <div className="mt-2"><span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/25 text-white ${UI.ring}`}><Euro className="h-4 w-4"/> Balance {formatEUR(balance||0)}</span></div>
