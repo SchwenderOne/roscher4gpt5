@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Leaf, Droplet, Calendar, Plus, X, Sparkles, Mic, Square, ChevronRight } from 'lucide-react'
+import { Leaf, Droplet, Calendar, Plus, X, Sparkles, Mic, Square, ChevronRight, Save, Trash } from 'lucide-react'
 
 type Plant = {
   id: string
@@ -172,6 +172,8 @@ export default function Plants(){
   const [plants, setPlants] = useState<Plant[]>(initial)
   const [open, setOpen] = useState({ today: false, schedule: false, notes: false })
   const [selected, setSelected] = useState<Plant | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<Plant | null>(null)
 
   const today = useMemo(() => new Date(), [])
 
@@ -282,7 +284,7 @@ export default function Plants(){
             </div>
           </div>
         </Section>
-        <Section title="All plants">
+        <Section title="All plants" action={<button onClick={()=>{ setEditing(null); setShowForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add plant</button>}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {plants.map(p => (
               <div key={p.id} className={`p-4 rounded-2xl border ${UI.ring} ${UI.card}`}>
@@ -291,7 +293,11 @@ export default function Plants(){
                     <div className="font-semibold flex items-center gap-2"><Leaf className="h-4 w-4 text-emerald-600"/>{p.name}</div>
                     {p.species && <div className="text-sm text-slate-600">{p.species}</div>}
                   </div>
-                  <button onClick={()=>setSelected(p)} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Details</button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={()=>setSelected(p)} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Details</button>
+                    <button onClick={()=>{ setEditing(p); setShowForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Edit</button>
+                    <button onClick={()=> setPlants(arr=> arr.filter(x=> x.id !== p.id))} className="rounded-xl bg-rose-500/90 text-white px-2 py-1 text-xs inline-flex items-center gap-1"><Trash className="h-3 w-3"/> Delete</button>
+                  </div>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 flex items-center gap-2`}><Droplet className="h-4 w-4"/> Every {p.frequencyDays}d</div>
@@ -302,8 +308,46 @@ export default function Plants(){
           </div>
         </Section>
         <PlantDetail plant={selected} onClose={() => setSelected(null)} onMarkWatered={onMarkWatered} />
+        <AnimatePresence>
+          {showForm && (
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-30 bg-black/20">
+              <PlantForm initial={editing ?? undefined} onCancel={()=>{ setShowForm(false); setEditing(null) }} onSave={(row)=>{
+                setPlants(arr=> { const i=arr.findIndex(x=> x.id===row.id); if(i>=0){ const copy=[...arr]; copy[i]=row; return copy } return [row, ...arr] })
+                setShowForm(false); setEditing(null)
+              }} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
+  )
+}
+
+function PlantForm({ initial, onCancel, onSave }:{ initial?: Partial<Plant>; onCancel:()=>void; onSave:(p:Plant)=>void }){
+  const [form, setForm] = useState<Partial<Plant>>({
+    id: initial?.id || Math.random().toString(36).slice(2),
+    name: initial?.name || '',
+    species: initial?.species || '',
+    lastWatered: initial?.lastWatered || toISODate(new Date()),
+    frequencyDays: initial?.frequencyDays ?? 7,
+    notes: initial?.notes || '',
+  })
+  const update = (k:keyof Plant, v:any)=> setForm(f=> ({...f, [k]: v}))
+  return (
+    <motion.aside initial={{x:480}} animate={{x:0}} exit={{x:480}} transition={{type:'spring', stiffness:260, damping:26}} className={`absolute right-0 top-0 h-full w-full max-w-md ${UI.card} ${UI.ring} rounded-l-2xl p-5 overflow-y-auto`}>
+      <div className="flex items-start justify-between"><h2 className="text-xl font-semibold leading-tight pr-6">{initial?.id ? 'Edit plant' : 'Add plant'}</h2><button onClick={onCancel} className={`${UI.ring} ${UI.chip} rounded-xl p-2`} aria-label="Close"><X className="h-5 w-5"/></button></div>
+      <div className="mt-4 space-y-3 text-sm">
+        <label className="block">Name<input className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.name as string} onChange={e=>update('name', e.target.value)} /></label>
+        <label className="block">Species<input className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.species as string} onChange={e=>update('species', e.target.value)} /></label>
+        <label className="block">Last watered<input type="date" className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.lastWatered as string} onChange={e=>update('lastWatered', e.target.value)} /></label>
+        <label className="block">Frequency (days)<input type="number" className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.frequencyDays as number} onChange={e=>update('frequencyDays', parseInt(e.target.value||'0',10))} /></label>
+        <label className="block">Notes<input className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.notes as string} onChange={e=>update('notes', e.target.value)} /></label>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button onClick={onCancel} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm`}>Cancel</button>
+        <button onClick={()=> onSave(form as Plant)} className="rounded-xl bg-emerald-500/90 text-white px-3 py-2 text-sm inline-flex items-center gap-2"><Save className="h-4 w-4"/> Save</button>
+      </div>
+    </motion.aside>
   )
 }
 

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, ChevronRight, Euro, Receipt, Search, Filter, Sparkles, Mic, Square } from 'lucide-react'
+import { Plus, X, ChevronRight, Euro, Receipt, Search, Filter, Sparkles, Mic, Square, Save, Trash } from 'lucide-react'
 
 const UI = {
   page: 'min-h-screen bg-slate-50 text-slate-800 p-4 md:p-8',
@@ -60,7 +60,8 @@ function BillsList({ bills, onPay }:{ bills:Bill[]; onPay:(b:Bill)=>void }){
   return (<div className="space-y-2">
     {bills.map(b=>(<div key={b.id} className={`flex items-center justify-between p-3 rounded-xl border ${UI.ring} ${pastel.amber}`}>
       <div><div className="font-medium">{b.name}</div><div className="text-xs text-slate-500">Due {b.due}</div></div>
-      <div className="flex items-center gap-3"><div className="text-sm font-medium">{formatEUR(b.amount)}</div>
+      <div className="flex items-center gap-2">
+        <div className="text-sm font-medium whitespace-nowrap">{formatEUR(b.amount)}</div>
         {b.status!=='paid' ? (<button onClick={()=>onPay(b)} className="rounded-xl bg-emerald-500/90 text-white px-3 py-2 text-sm">Mark paid</button>)
                            : (<span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-2 py-1">Paid</span>)}
       </div>
@@ -91,9 +92,69 @@ function TransactionDetail({ tx, onClose, onDelete }:{ tx:Tx|null; onClose:()=>v
       <div className="mt-4"><div className="text-sm text-slate-600 mb-1">Split</div><div className="space-y-2">
         {Object.entries(tx.split || {}).map(([name, share])=> (<div key={name} className={`p-3 rounded-xl border ${UI.ring}`}><div className="flex items-center justify-between text-sm"><span>{name}</span><span className="font-medium">{Math.round(share*100)}%</span></div></div>))}
       </div></div>
-      <div className="mt-4 grid grid-cols-2 gap-2"><button className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Receipt className="h-4 w-4"/> Attach receipt</button><button onClick={()=>onDelete(tx)} className="rounded-xl bg-rose-500/90 text-white px-3 py-2 text-sm">Delete</button></div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Receipt className="h-4 w-4"/> Attach receipt</button>
+        <button onClick={()=>onDelete(tx)} className="rounded-xl bg-rose-500/90 text-white px-3 py-2 text-sm inline-flex items-center gap-2"><Trash className="h-4 w-4"/> Delete</button>
+      </div>
     </motion.aside>
   </motion.div>)}</AnimatePresence>)
+}
+
+function TransactionForm({ initial, people, onCancel, onSave }:{ initial?: Partial<Tx>; people: string[]; onCancel:()=>void; onSave:(t:Tx)=>void }){
+  const [form, setForm] = useState<Partial<Tx>>({
+    id: initial?.id || `t${Math.random().toString(36).slice(2)}`,
+    date: initial?.date || new Date().toISOString().slice(0,10),
+    category: initial?.category || 'Other',
+    amount: initial?.amount ?? 0,
+    payer: (initial?.payer as any) || 'Lucas',
+    split: initial?.split || { Lucas:0.5, Alex:0.5 },
+    note: initial?.note || '',
+    status: initial?.status || 'paid',
+  })
+  const update = (k:keyof Tx, v:any)=> setForm(f=> ({...f, [k]: v}))
+  return (
+    <motion.aside initial={{x:480}} animate={{x:0}} exit={{x:480}} transition={{type:'spring', stiffness:260, damping:26}} className={`absolute right-0 top-0 h-full w-full max-w-md ${UI.card} ${UI.ring} rounded-l-2xl p-5 overflow-y-auto`}>
+      <div className="flex items-start justify-between"><h2 className="text-xl font-semibold leading-tight pr-6">{initial?.id ? 'Edit transaction' : 'Add transaction'}</h2><button onClick={onCancel} className={`${UI.ring} ${UI.chip} rounded-xl p-2`} aria-label="Close"><X className="h-5 w-5"/></button></div>
+      <div className="mt-4 space-y-3 text-sm">
+        <label className="block">Category<input className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.category as string} onChange={e=>update('category', e.target.value)} /></label>
+        <label className="block">Amount<input type="number" step="0.01" className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.amount as number} onChange={e=>update('amount', parseFloat(e.target.value||'0'))} /></label>
+        <label className="block">Date<input type="date" className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.date as string} onChange={e=>update('date', e.target.value)} /></label>
+        <label className="block">Payer<select className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.payer as any} onChange={e=>update('payer', e.target.value)}>{people.map(p=> <option key={p}>{p}</option>)}</select></label>
+        <label className="block">Note<input className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.note as string} onChange={e=>update('note', e.target.value)} /></label>
+        <label className="block">Status<select className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.status as any} onChange={e=>update('status', e.target.value)}><option>paid</option><option>due</option><option>scheduled</option></select></label>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button onClick={onCancel} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm`}>Cancel</button>
+        <button onClick={()=> onSave(form as Tx)} className="rounded-xl bg-emerald-500/90 text-white px-3 py-2 text-sm inline-flex items-center gap-2"><Save className="h-4 w-4"/> Save</button>
+      </div>
+    </motion.aside>
+  )
+}
+
+function BillForm({ initial, onCancel, onSave }:{ initial?: Partial<Bill>; onCancel:()=>void; onSave:(b:Bill)=>void }){
+  const [form, setForm] = useState<Partial<Bill>>({
+    id: initial?.id || `b${Math.random().toString(36).slice(2)}`,
+    name: initial?.name || '',
+    amount: initial?.amount ?? 0,
+    due: initial?.due || new Date().toISOString().slice(0,10),
+    status: initial?.status || 'due',
+  })
+  const update = (k:keyof Bill, v:any)=> setForm(f=> ({...f, [k]: v}))
+  return (
+    <motion.aside initial={{x:480}} animate={{x:0}} exit={{x:480}} transition={{type:'spring', stiffness:260, damping:26}} className={`absolute right-0 top-0 h-full w-full max-w-md ${UI.card} ${UI.ring} rounded-l-2xl p-5 overflow-y-auto`}>
+      <div className="flex items-start justify-between"><h2 className="text-xl font-semibold leading-tight pr-6">{initial?.id ? 'Edit bill' : 'Add bill'}</h2><button onClick={onCancel} className={`${UI.ring} ${UI.chip} rounded-xl p-2`} aria-label="Close"><X className="h-5 w-5"/></button></div>
+      <div className="mt-4 space-y-3 text-sm">
+        <label className="block">Name<input className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.name as string} onChange={e=>update('name', e.target.value)} /></label>
+        <label className="block">Amount<input type="number" step="0.01" className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.amount as number} onChange={e=>update('amount', parseFloat(e.target.value||'0'))} /></label>
+        <label className="block">Due<input type="date" className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.due as string} onChange={e=>update('due', e.target.value)} /></label>
+        <label className="block">Status<select className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.status as any} onChange={e=>update('status', e.target.value)}><option>due</option><option>scheduled</option><option>paid</option></select></label>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button onClick={onCancel} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm`}>Cancel</button>
+        <button onClick={()=> onSave(form as Bill)} className="rounded-xl bg-emerald-500/90 text-white px-3 py-2 text-sm inline-flex items-center gap-2"><Save className="h-4 w-4"/> Save</button>
+      </div>
+    </motion.aside>
+  )
 }
 
 export default function Finance(){
@@ -105,10 +166,21 @@ export default function Finance(){
   const [open, setOpen] = useState({ bills:false, tx:false, settle:false })
   const [query,setQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('All')
+  const [showTxForm, setShowTxForm] = useState(false)
+  const [editingTx, setEditingTx] = useState<Tx | null>(null)
+  const [showBillForm, setShowBillForm] = useState(false)
+  const [editingBill, setEditingBill] = useState<Bill | null>(null)
 
   const onAdd = (t:Tx)=> setTx(arr=> [t, ...arr])
   const onPay = (b:Bill)=> setBills(arr=> arr.map(x=> x.id===b.id ? { ...x, status:'paid' } : x))
   const onDelete = (row:Tx)=> setTx(arr=> arr.filter(x=> x.id !== row.id))
+  const onDeleteBill = (row:Bill)=> setBills(arr=> arr.filter(x=> x.id !== row.id))
+  const onSaveTx = (row:Tx)=> setTx(arr=> {
+    const i = arr.findIndex(x=> x.id===row.id); if(i>=0){ const copy=[...arr]; copy[i]=row; return copy } else { return [row, ...arr] }
+  })
+  const onSaveBill = (row:Bill)=> setBills(arr=> {
+    const i = arr.findIndex(x=> x.id===row.id); if(i>=0){ const copy=[...arr]; copy[i]=row; return copy } else { return [row, ...arr] }
+  })
 
   const filtered = tx.filter(t=>{
     const matchQuery = query ? (t.category + ' ' + (t.note||'')).toLowerCase().includes(query.toLowerCase()) : true
@@ -131,14 +203,34 @@ export default function Finance(){
         }}} onQuickAdd={()=>{
           const amt = 10; onAdd({ id:`t${Math.random().toString(36).slice(2)}`, date:new Date().toISOString().slice(0,10), category:'Other', amount:amt, payer:'Lucas', split:{ Lucas:0.5, Alex:0.5 }, note:'Quick add', status:'paid' })
         }} />
-      <Section title={`Finance overview • ${new Date().toLocaleDateString(undefined,{month:'short', day:'numeric'})}`} action={<button onClick={()=>{ const amt=10; onAdd({ id:`t${Math.random().toString(36).slice(2)}`, date:new Date().toISOString().slice(0,10), category:'Other', amount:amt, payer:'Lucas', split:{ Lucas:0.5, Alex:0.5 }, note:'Quick add', status:'paid' }) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add</button>}>
+      <Section title={`Finance overview • ${new Date().toLocaleDateString(undefined,{month:'short', day:'numeric'})}`} action={<div className="flex gap-2"><button onClick={()=>{ setEditingTx(null); setShowTxForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add tx</button><button onClick={()=>{ setEditingBill(null); setShowBillForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add bill</button></div>}>
         <div className="divide-y divide-slate-200/80 rounded-xl overflow-hidden">
           <div>
             <button onClick={()=> setOpen(o=> ({...o, bills: !o.bills}))} className="w-full text-left px-3 md:px-4 py-3 md:py-4 flex items-center justify-between hover:bg-slate-50/60">
               <div><div className="text-xs text-slate-500">Upcoming bills</div><div className="text-2xl font-semibold">{counts.bills}</div></div>
               <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${open.bills ? 'rotate-90':''}`}/>
             </button>
-            <AnimatePresence initial={false}>{open.bills && (<motion.div initial={{opacity:0, y:6}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-6}} className="px-3 md:px-4 pb-4"><BillsList bills={bills} onPay={onPay} /></motion.div>)}</AnimatePresence>
+            <AnimatePresence initial={false}>{open.bills && (
+              <motion.div initial={{opacity:0, y:6}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-6}} className="px-3 md:px-4 pb-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <button onClick={()=>{ setEditingBill(null); setShowBillForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add bill</button>
+                </div>
+                <div className="space-y-2">
+                  {bills.map(b => (
+                    <div key={b.id} className={`flex items-center justify-between p-3 rounded-xl border ${UI.ring} ${pastel.amber}`}>
+                      <div><div className="font-medium">{b.name}</div><div className="text-xs text-slate-500">Due {b.due}</div></div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium whitespace-nowrap">{formatEUR(b.amount)}</div>
+                        <button onClick={()=>{ setEditingBill(b); setShowBillForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Edit</button>
+                        <button onClick={()=> onDeleteBill(b)} className="rounded-xl bg-rose-500/90 text-white px-2 py-1 text-xs inline-flex items-center gap-1"><Trash className="h-3 w-3"/> Delete</button>
+                        {b.status!=='paid' ? (<button onClick={()=>onPay(b)} className="rounded-xl bg-emerald-500/90 text-white px-2 py-1 text-xs">Mark paid</button>)
+                                           : (<span className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl px-2 py-1">Paid</span>)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}</AnimatePresence>
           </div>
           <div>
             <button onClick={()=> setOpen(o=> ({...o, tx: !o.tx}))} className="w-full text-left px-3 md:px-4 py-3 md:py-4 flex items-center justify-between hover:bg-slate-50/60">
@@ -150,13 +242,19 @@ export default function Finance(){
                 <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1.5 flex items-center gap-2`}>
                   <Search className="h-4 w-4"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search…" className="bg-transparent outline-none text-sm w-40"/>
                 </div>
-                <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1.5 flex items-center gap-2`}>
-                  <Filter className="h-4 w-4"/><select value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} className="bg-transparent outline-none text-sm">
+                 <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1.5 flex items-center gap-2`}>
+                  <Filter className="h-4 w-4"/><select aria-label="Category filter" value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)} className="bg-transparent outline-none text-sm">
                     {categories.map(c=> <option key={c}>{c}</option>)}
                   </select>
                 </div>
               </div>
-              <div className="space-y-2">{filtered.map(row => (<TransactionRow key={row.id} t={row} onOpen={setSelected}/>))}
+               <div className="space-y-2">{filtered.map(row => (
+                 <div key={row.id} className="flex items-center gap-2">
+                   <div className="flex-1"><TransactionRow t={row} onOpen={setSelected}/></div>
+                   <button onClick={()=>{ setEditingTx(row); setShowTxForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Edit</button>
+                   <button onClick={()=> onDelete(row)} className="rounded-xl bg-rose-500/90 text-white px-2 py-1 text-xs inline-flex items-center gap-1"><Trash className="h-3 w-3"/> Delete</button>
+                 </div>
+               ))}
                 {filtered.length===0 && <div className="text-sm text-slate-500">No transactions match your filter.</div>}
               </div>
             </motion.div>)}</AnimatePresence>
@@ -180,6 +278,20 @@ export default function Finance(){
         </div>
       </Section>
       <TransactionDetail tx={selected} onClose={()=>setSelected(null)} onDelete={onDelete} />
+      <AnimatePresence>
+        {showTxForm && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-30 bg-black/20">
+            <TransactionForm initial={editingTx ?? undefined} people={people} onCancel={()=>{ setShowTxForm(false); setEditingTx(null) }} onSave={(row)=>{ onSaveTx(row); setShowTxForm(false); setEditingTx(null) }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showBillForm && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-30 bg-black/20">
+            <BillForm initial={editingBill ?? undefined} onCancel={()=>{ setShowBillForm(false); setEditingBill(null) }} onSave={(row)=>{ onSaveBill(row); setShowBillForm(false); setEditingBill(null) }} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   </div>)
 }

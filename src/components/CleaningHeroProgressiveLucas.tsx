@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Sparkles, Mic, Square, ChevronRight, Calendar, Check } from 'lucide-react'
+import { Plus, X, Sparkles, Mic, Square, ChevronRight, Calendar, Check, Save, Trash } from 'lucide-react'
 
 type Person = 'Lucas' | 'Alex'
 
@@ -152,6 +152,8 @@ export default function Cleaning(){
   const [rooms, setRooms] = useState<Room[]>(initial)
   const [open, setOpen] = useState({ today:false, rotation:false, backlog:false })
   const [selected, setSelected] = useState<Room|null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<Room | null>(null)
 
   const today = useMemo(()=> new Date(), [])
 
@@ -240,7 +242,7 @@ export default function Cleaning(){
             </div>
           </div>
         </Section>
-        <Section title="All rooms">
+        <Section title="All rooms" action={<button onClick={()=>{ setEditing(null); setShowForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add room</button>}>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {rooms.map(r => (
               <div key={r.id} className={`p-4 rounded-2xl border ${UI.ring} ${UI.card}`}>
@@ -249,7 +251,11 @@ export default function Cleaning(){
                     <div className="font-semibold">{r.name}</div>
                     {r.area && <div className="text-sm text-slate-600">{r.area}</div>}
                   </div>
-                  <button onClick={()=>setSelected(r)} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Details</button>
+                  <div className="flex items-center gap-2">
+                    <button onClick={()=>setSelected(r)} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Details</button>
+                    <button onClick={()=>{ setEditing(r); setShowForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Edit</button>
+                    <button onClick={()=> setRooms(arr=> arr.filter(x=> x.id !== r.id))} className="rounded-xl bg-rose-500/90 text-white px-2 py-1 text-xs inline-flex items-center gap-1"><Trash className="h-3 w-3"/> Delete</button>
+                  </div>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1`}>Every {r.frequencyDays}d</div>
@@ -261,8 +267,48 @@ export default function Cleaning(){
           </div>
         </Section>
         <RoomDetail room={selected} onClose={()=>setSelected(null)} onMarkCleaned={onMarkCleaned} />
+        <AnimatePresence>
+          {showForm && (
+            <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-30 bg-black/20">
+              <RoomForm initial={editing ?? undefined} onCancel={()=>{ setShowForm(false); setEditing(null) }} onSave={(row)=>{
+                setRooms(arr=> { const i=arr.findIndex(x=> x.id===row.id); if(i>=0){ const copy=[...arr]; copy[i]=row; return copy } return [row, ...arr] })
+                setShowForm(false); setEditing(null)
+              }} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
+  )
+}
+
+function RoomForm({ initial, onCancel, onSave }:{ initial?: Partial<Room>; onCancel:()=>void; onSave:(r:Room)=>void }){
+  const [form, setForm] = useState<Partial<Room>>({
+    id: initial?.id || Math.random().toString(36).slice(2),
+    name: initial?.name || '',
+    area: initial?.area || '',
+    lastCleaned: initial?.lastCleaned || toISODate(new Date()),
+    frequencyDays: initial?.frequencyDays ?? 7,
+    assignedNext: (initial?.assignedNext as any) || 'Lucas',
+    notes: initial?.notes || '',
+  })
+  const update = (k:keyof Room, v:any)=> setForm(f=> ({...f, [k]: v}))
+  return (
+    <motion.aside initial={{x:480}} animate={{x:0}} exit={{x:480}} transition={{type:'spring', stiffness:260, damping:26}} className={`absolute right-0 top-0 h-full w-full max-w-md ${UI.card} ${UI.ring} rounded-l-2xl p-5 overflow-y-auto`}>
+      <div className="flex items-start justify-between"><h2 className="text-xl font-semibold leading-tight pr-6">{initial?.id ? 'Edit room' : 'Add room'}</h2><button onClick={onCancel} className={`${UI.ring} ${UI.chip} rounded-xl p-2`} aria-label="Close"><X className="h-5 w-5"/></button></div>
+      <div className="mt-4 space-y-3 text-sm">
+        <label className="block">Name<input className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.name as string} onChange={e=>update('name', e.target.value)} /></label>
+        <label className="block">Area<input className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.area as string} onChange={e=>update('area', e.target.value)} /></label>
+        <label className="block">Last cleaned<input type="date" className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.lastCleaned as string} onChange={e=>update('lastCleaned', e.target.value)} /></label>
+        <label className="block">Frequency (days)<input type="number" className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.frequencyDays as number} onChange={e=>update('frequencyDays', parseInt(e.target.value||'0',10))} /></label>
+        <label className="block">Assigned<select className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.assignedNext as any} onChange={e=>update('assignedNext', e.target.value)}><option>Lucas</option><option>Alex</option></select></label>
+        <label className="block">Notes<input className={`${UI.ring} ${UI.chip} mt-1 w-full rounded-xl px-3 py-2`} value={form.notes as string} onChange={e=>update('notes', e.target.value)} /></label>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button onClick={onCancel} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm`}>Cancel</button>
+        <button onClick={()=> onSave(form as Room)} className="rounded-xl bg-emerald-500/90 text-white px-3 py-2 text-sm inline-flex items-center gap-2"><Save className="h-4 w-4"/> Save</button>
+      </div>
+    </motion.aside>
   )
 }
 
