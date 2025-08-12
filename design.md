@@ -26,20 +26,21 @@ This document captures the visual and interaction rules so all screens feel cohe
 - Rounded: `rounded-2xl` for cards, `rounded-full` for pills.
 
 ## Components
-- **Hero**: full-bleed image with gradient overlay, greeting line, and a floating command bar (text + mic). 
+- **Hero**: full-bleed image with gradient overlay, greeting line, and a floating command bar (text + mic).
   - Finance hero also shows **balance chip** and a **+** quick-add in top-right.
+  - Interaction detail: background overlays have `pointer-events: none`; the **“+”** button sits above with `z-index` so clicks are never blocked.
 - **Stat chips**: `ring-1` + `bg-slate-100`, small text, rounded-xl.
 - **Rows (expanders)**: tap the row to expand its content inline; rotate chevron 90° on open.
-- **Task/Transaction item**: tint block, short title, optional time/subtext, trailing arrow.
+- **Task/Transaction/Entity item**: tint block, short title, optional time/subtext, trailing arrow.
 - **Slide-over**: right-anchored, rounded left edge, same card/ring treatment.
 
 ## Patterns
-- **Hero + Progressive** across screens: 
+- **Hero + Progressive** across screens:
   - **Dashboard**: Daily / Short‑term / Long‑term.
-  - **Finance**: Bills / Transactions / Settlement.
+  - **Finance**: Bills / Transactions / Settlement (+ CRUD forms).
   - **Shopping**: Lists / Today’s picks / Long‑term items.
-  - **Cleaning**: Today / Rotation / Backlog.
-  - **Plants**: Today / Schedule / Notes.
+  - **Cleaning**: Today / Rotation / Backlog (+ CRUD forms).
+  - **Plants**: Today / Schedule / Notes (+ CRUD forms).
 
 ## Motion
 - Page section enter: y: 8px, opacity: 0 → 1, duration 0.2s (springs for slide-over).
@@ -48,7 +49,7 @@ This document captures the visual and interaction rules so all screens feel cohe
 
 ## Accessibility
 - Ensure focus outlines are visible on all interactive elements.
-- Provide aria-labels where icons exist without text (e.g., mic, +, close).
+- Provide aria-labels where icons exist without text (e.g., mic, +, close); selects have accessible names.
 - Keyboard: Esc closes slide-overs; Enter submits command.
 - Color contrast: at least AA for text; avoid tinted text on tinted backgrounds.
 

@@ -26,7 +26,8 @@ This overview provides an easy-to-understand description of all five main areas 
 
 * **Plant overview**: A list of all plants in our apartment with pictures and names.
 * **Watering schedule**: For each plant, we can see when it was last watered and when the next watering date is due.
-* **Reminder**: We receive a notification on the day of the watering date.
+* **Reminders & actions**: Mark watered from the detail panel; quick add via the hero “+”.
+* **CRUD**: Create, edit, and delete plants via slide-over form; card grid shows all plants.
 * **Additional information**: We can add notes, for example about fertilizer, location, or special care tips.
 
 ## 5. Home / Dashboard
@@ -34,6 +35,14 @@ This overview provides an easy-to-understand description of all five main areas 
 * **Daily overview**: A summary of all tasks due for the day in the areas of shopping, finances, cleaning, and plants.
 * **Quick access**: We can switch directly to the individual areas using buttons or menus.
 * **Important notifications**: The app displays important information and reminders at a glance, e.g., outstanding debts or upcoming purchases.
+
+---
+
+### Cleaning
+
+* **Schedule & rotation**: For each room, we track last cleaned, next date (based on frequency), and who’s next.
+* **Backlog**: Overdue rooms are grouped for catch-up.
+* **CRUD**: Create, edit, and delete rooms; mark cleaned rotates the assignment and updates last cleaned.
 
 ---
 
