@@ -12,8 +12,10 @@
     "@supabase/supabase-js": "^2.55.0",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.453.0",
+    "pdfjs-dist": "^5.4.54",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",
