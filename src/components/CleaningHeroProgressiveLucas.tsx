@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Sparkles, Mic, Square, ChevronRight, Calendar, Check, Save, Trash } from 'lucide-react'
+import { Plus, X, Sparkles, Mic, Square, Calendar, Check, Save } from 'lucide-react'
 
 type Person = 'Lucas' | 'Alex'
 
@@ -12,6 +12,7 @@ type Room = {
   frequencyDays: number
   assignedNext: Person
   notes?: string
+  imageUrl?: string
 }
 
 const UI = {
@@ -45,10 +46,10 @@ function rotate(person: Person): Person { return person === 'Lucas' ? 'Alex' : '
 function sampleRooms(): Room[] {
   const today = new Date()
   return [
-    { id: 'r1', name: 'Bathroom', area: 'Main', lastCleaned: toISODate(addDays(today, -7)), frequencyDays: 7, assignedNext: 'Lucas', notes: 'Deep clean tiles monthly.' },
-    { id: 'r2', name: 'Kitchen', area: 'Main', lastCleaned: toISODate(addDays(today, -3)), frequencyDays: 3, assignedNext: 'Alex' },
-    { id: 'r3', name: 'Living Room', area: 'Common', lastCleaned: toISODate(addDays(today, -5)), frequencyDays: 7, assignedNext: 'Lucas' },
-    { id: 'r4', name: 'Hallway', area: 'Common', lastCleaned: toISODate(addDays(today, -10)), frequencyDays: 14, assignedNext: 'Alex' },
+    { id: 'r1', name: 'Bathroom', area: 'Main', lastCleaned: toISODate(addDays(today, -7)), frequencyDays: 7, assignedNext: 'Lucas', notes: 'Deep clean tiles monthly.', imageUrl: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?q=80&w=1600&auto=format&fit=crop' },
+    { id: 'r2', name: 'Kitchen', area: 'Main', lastCleaned: toISODate(addDays(today, -3)), frequencyDays: 3, assignedNext: 'Alex', imageUrl: 'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?q=80&w=1600&auto=format&fit=crop' },
+    { id: 'r3', name: 'Living Room', area: 'Common', lastCleaned: toISODate(addDays(today, -5)), frequencyDays: 7, assignedNext: 'Lucas', imageUrl: 'https://images.unsplash.com/photo-1505691723518-36a5ac3b2d52?q=80&w=1600&auto=format&fit=crop' },
+    { id: 'r4', name: 'Hallway', area: 'Common', lastCleaned: toISODate(addDays(today, -10)), frequencyDays: 14, assignedNext: 'Alex', imageUrl: 'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?q=80&w=1600&auto=format&fit=crop' },
   ]
 }
 
@@ -100,23 +101,6 @@ function Hero({ onSubmit, onQuickAdd }:{ onSubmit: (q: string) => void; onQuickA
   )
 }
 
-function Dot(){ return <span className="inline-block h-2.5 w-2.5 rounded-full bg-sky-400" /> }
-
-function RoomRow({ r, onOpen }:{ r: Room; onOpen: (r: Room) => void }){
-  const diff = daysBetween(nextCleanDate(r), new Date()) * -1
-  const label = diff < 0 ? `${-diff}d overdue` : diff === 0 ? 'due today' : `in ${diff}d`
-  return (
-    <button onClick={()=>onOpen(r)} className={`w-full text-left grid grid-cols-[auto,1fr,auto] gap-3 items-center p-3 rounded-xl border ${UI.ring} hover:bg-white`}>
-      <Dot />
-      <div className="truncate">
-        <div className="font-medium truncate">{r.name} {r.area && <span className="text-slate-500">— {r.area}</span>}</div>
-        <div className="text-xs text-slate-500">Every {r.frequencyDays}d • Last {r.lastCleaned} • Next {toISODate(nextCleanDate(r))}</div>
-      </div>
-      <div className="text-xs text-slate-700 inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5"/> {label}</div>
-    </button>
-  )
-}
-
 function RoomDetail({ room, onClose, onMarkCleaned }:{ room: Room | null; onClose:()=>void; onMarkCleaned: (r: Room) => void }){
   if(!room) return null
   return (
@@ -150,18 +134,11 @@ function RoomDetail({ room, onClose, onMarkCleaned }:{ room: Room | null; onClos
 export default function Cleaning(){
   const initial = useMemo(sampleRooms, [])
   const [rooms, setRooms] = useState<Room[]>(initial)
-  const [open, setOpen] = useState({ today:false, rotation:false, backlog:false })
   const [selected, setSelected] = useState<Room|null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Room | null>(null)
 
   const today = useMemo(()=> new Date(), [])
-
-  const dueToday = rooms.filter(r=> isDueToday(r, today))
-  const upcoming = rooms.filter(r=> isUpcoming(r, today, 7))
-  const backlog = rooms.filter(r=> nextCleanDate(r) < addDays(today, -1))
-
-  const counts = { today: dueToday.length, rotation: rooms.length, backlog: backlog.length }
 
   const onMarkCleaned = (r: Room) => {
     setRooms(arr => arr.map(x => x.id === r.id ? { ...x, lastCleaned: toISODate(new Date()), assignedNext: rotate(x.assignedNext) } : x))
@@ -190,79 +167,21 @@ export default function Cleaning(){
     <div className={UI.page}>
       <div className="max-w-6xl mx-auto space-y-4">
         <Hero onSubmit={onSubmit} onQuickAdd={()=>{ setEditing(null); setShowForm(true) }} />
-        <Section title={`Cleaning overview • ${new Date().toLocaleDateString(undefined,{month:'short', day:'numeric'})}`}>
-          <div className="divide-y divide-slate-200/80 rounded-xl overflow-hidden">
-            <div>
-              <button onClick={()=> setOpen(o=> ({...o, today: !o.today}))} className="w-full text-left px-3 md:px-4 py-3 md:py-4 flex items-center justify-between hover:bg-slate-50/60">
-                <div><div className="text-xs text-slate-500">Today</div><div className="text-2xl font-semibold">{counts.today}</div></div>
-                <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${open.today ? 'rotate-90' : ''}`}/>
-              </button>
-              <AnimatePresence initial={false}>{open.today && (
-                <motion.div initial={{opacity:0, y:6}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-6}} className="px-3 md:px-4 pb-4">
-                  <div className="text-sm text-slate-500 mb-2">Due today or overdue — {counts.today} item(s)</div>
-                  <div className="space-y-2">{dueToday.map(r => (<RoomRow key={r.id} r={r} onOpen={setSelected}/>))}
-                    {dueToday.length===0 && <div className="text-sm text-slate-500">Nothing due right now.</div>}
-                  </div>
-                </motion.div>
-              )}</AnimatePresence>
-            </div>
-            <div>
-              <button onClick={()=> setOpen(o=> ({...o, rotation: !o.rotation}))} className="w-full text-left px-3 md:px-4 py-3 md:py-4 flex items-center justify-between hover:bg-slate-50/60">
-                <div><div className="text-xs text-slate-500">Rotation</div><div className="text-2xl font-semibold">{counts.rotation}</div></div>
-                <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${open.rotation ? 'rotate-90' : ''}`}/>
-              </button>
-              <AnimatePresence initial={false}>{open.rotation && (
-                <motion.div initial={{opacity:0, y:6}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-6}} className="px-3 md:px-4 pb-4">
-                  <div className="text-sm text-slate-500 mb-2">Next assigned per room</div>
-                  <div className="space-y-2">{rooms.map(r => (
-                    <div key={r.id} className={`p-3 rounded-xl border ${UI.ring}`}>
-                      <div className="flex items-center justify-between">
-                        <div className="font-medium">{r.name}</div>
-                        <div className="text-sm text-slate-700">{r.assignedNext}</div>
-                      </div>
-                      <div className="text-xs text-slate-500">Every {r.frequencyDays}d • Last {r.lastCleaned}</div>
-                    </div>
-                  ))}</div>
-                </motion.div>
-              )}</AnimatePresence>
-            </div>
-            <div>
-              <button onClick={()=> setOpen(o=> ({...o, backlog: !o.backlog}))} className="w-full text-left px-3 md:px-4 py-3 md:py-4 flex items-center justify-between hover:bg-slate-50/60">
-                <div><div className="text-xs text-slate-500">Backlog</div><div className="text-2xl font-semibold">{counts.backlog}</div></div>
-                <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${open.backlog ? 'rotate-90' : ''}`}/>
-              </button>
-              <AnimatePresence initial={false}>{open.backlog && (
-                <motion.div initial={{opacity:0, y:6}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-6}} className="px-3 md:px-4 pb-4">
-                  <div className="text-sm text-slate-500 mb-2">Overdue by more than a day</div>
-                  <div className="space-y-2">{backlog.map(r => (<RoomRow key={r.id} r={r} onOpen={setSelected}/>))}
-                    {backlog.length===0 && <div className="text-sm text-slate-500">No backlog 🎉</div>}
-                  </div>
-                </motion.div>
-              )}</AnimatePresence>
-            </div>
-          </div>
-        </Section>
-        <Section title="All rooms" action={<button onClick={()=>{ setEditing(null); setShowForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add room</button>}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <Section title="Rooms" action={<button onClick={()=>{ setEditing(null); setShowForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add room</button>}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {rooms.map(r => (
-              <div key={r.id} className={`p-4 rounded-2xl border ${UI.ring} ${UI.card}`}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-semibold">{r.name}</div>
-                    {r.area && <div className="text-sm text-slate-600">{r.area}</div>}
+              <button key={r.id} onClick={()=> setSelected(r)} className={`p-0 text-left rounded-2xl border ${UI.ring} ${UI.card} overflow-hidden hover:shadow-sm transition`} aria-label={`Open ${r.name}`}>
+                <img src={r.imageUrl || getRoomImage(r)} alt="" className="w-full h-40 object-cover" />
+                <div className="p-4">
+                  <div className="font-semibold">{r.name}</div>
+                  {r.area && <div className="text-sm text-slate-600 mt-0.5">{r.area}</div>}
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                    <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1`}>Every {r.frequencyDays}d</div>
+                    <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1`}><Calendar className="h-4 w-4 inline mr-1"/> Next {toISODate(nextCleanDate(r))}</div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={()=>setSelected(r)} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Details</button>
-                    <button onClick={()=>{ setEditing(r); setShowForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Edit</button>
-                    <button onClick={()=> setRooms(arr=> arr.filter(x=> x.id !== r.id))} className="rounded-xl bg-rose-500/90 text-white px-2 py-1 text-xs inline-flex items-center gap-1"><Trash className="h-3 w-3"/> Delete</button>
-                  </div>
+                  <div className="mt-2 text-xs text-slate-600">Assigned: {r.assignedNext}</div>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                  <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1`}>Every {r.frequencyDays}d</div>
-                  <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1`}>Next {toISODate(nextCleanDate(r))}</div>
-                </div>
-                <div className="mt-2 text-xs text-slate-600">Assigned: {r.assignedNext}</div>
-              </div>
+              </button>
             ))}
           </div>
         </Section>
@@ -310,6 +229,16 @@ function RoomForm({ initial, onCancel, onSave }:{ initial?: Partial<Room>; onCan
       </div>
     </motion.aside>
   )
+}
+
+const roomImages: Record<string, string> = {
+  Bathroom: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?q=80&w=1600&auto=format&fit=crop',
+  Kitchen: 'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?q=80&w=1600&auto=format&fit=crop',
+  'Living Room': 'https://images.unsplash.com/photo-1505691723518-36a5ac3b2d52?q=80&w=1600&auto=format&fit=crop',
+  Hallway: 'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?q=80&w=1600&auto=format&fit=crop',
+}
+function getRoomImage(r: Room): string {
+  return roomImages[r.name] || 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?q=80&w=1600&auto=format&fit=crop'
 }
 
 

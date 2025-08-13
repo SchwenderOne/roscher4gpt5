@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Leaf, Droplet, Calendar, Plus, X, Sparkles, Mic, Square, ChevronRight, Save, Trash } from 'lucide-react'
+import { Leaf, Droplet, Calendar, Plus, X, Sparkles, Mic, Square, Save } from 'lucide-react'
 
 type Plant = {
   id: string
@@ -9,6 +9,7 @@ type Plant = {
   lastWatered: string // YYYY-MM-DD
   frequencyDays: number
   notes?: string
+  imageUrl?: string
 }
 
 const UI = {
@@ -35,10 +36,10 @@ function isUpcoming(p: Plant, today: Date, windowDays: number): boolean {
 function samplePlants(): Plant[] {
   const today = new Date()
   return [
-    { id: 'pl1', name: 'Monstera', species: 'Monstera deliciosa', lastWatered: toISODate(addDays(today, -6)), frequencyDays: 7, notes: 'Bright, indirect light. Fertilize next week.' },
-    { id: 'pl2', name: 'Snake Plant', species: 'Sansevieria', lastWatered: toISODate(addDays(today, -10)), frequencyDays: 14, notes: 'Low water; tolerant of shade.' },
-    { id: 'pl3', name: 'Basil', species: 'Ocimum basilicum', lastWatered: toISODate(addDays(today, -2)), frequencyDays: 3, notes: 'Kitchen windowsill. Pinch flowers.' },
-    { id: 'pl4', name: 'Pothos', species: 'Epipremnum aureum', lastWatered: toISODate(addDays(today, -4)), frequencyDays: 7 },
+    { id: 'pl1', name: 'Monstera', species: 'Monstera deliciosa', lastWatered: toISODate(addDays(today, -6)), frequencyDays: 7, notes: 'Bright, indirect light. Fertilize next week.', imageUrl: 'https://images.unsplash.com/photo-1589227365533-cee630bd59d7?q=80&w=1200&auto=format&fit=crop' },
+    { id: 'pl2', name: 'Snake Plant', species: 'Sansevieria', lastWatered: toISODate(addDays(today, -10)), frequencyDays: 14, notes: 'Low water; tolerant of shade.', imageUrl: 'https://images.unsplash.com/photo-1621447504866-5981c3dd2cd6?q=80&w=1200&auto=format&fit=crop' },
+    { id: 'pl3', name: 'Basil', species: 'Ocimum basilicum', lastWatered: toISODate(addDays(today, -2)), frequencyDays: 3, notes: 'Kitchen windowsill. Pinch flowers.', imageUrl: 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1200&auto=format&fit=crop' },
+    { id: 'pl4', name: 'Pothos', species: 'Epipremnum aureum', lastWatered: toISODate(addDays(today, -4)), frequencyDays: 7, imageUrl: 'https://images.unsplash.com/photo-1575635694007-874f5b1178e3?q=80&w=1200&auto=format&fit=crop' },
   ]
 }
 
@@ -170,18 +171,11 @@ function PlantDetail({ plant, onClose, onMarkWatered }:{ plant: Plant | null; on
 export default function Plants(){
   const initial = useMemo(samplePlants, [])
   const [plants, setPlants] = useState<Plant[]>(initial)
-  const [open, setOpen] = useState({ today: false, schedule: false, notes: false })
   const [selected, setSelected] = useState<Plant | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Plant | null>(null)
 
   const today = useMemo(() => new Date(), [])
-
-  const dueToday = plants.filter(p => isDueToday(p, today)).sort((a,b)=> nextWaterDate(a).getTime() - nextWaterDate(b).getTime())
-  const upcoming = plants.filter(p => !isDueToday(p, today) && isUpcoming(p, today, 7)).sort((a,b)=> nextWaterDate(a).getTime() - nextWaterDate(b).getTime())
-  const withNotes = plants.filter(p => !!p.notes)
-
-  const counts = { today: dueToday.length, schedule: upcoming.length, notes: withNotes.length }
 
   const onMarkWatered = (p: Plant) => {
     setPlants(arr => arr.map(x => x.id === p.id ? { ...x, lastWatered: toISODate(new Date()) } : x))
@@ -211,99 +205,20 @@ export default function Plants(){
     <div className={UI.page}>
       <div className="max-w-6xl mx-auto space-y-4">
         <Hero name="Lucas" onSubmit={onSubmit} onQuickAdd={()=>{ setEditing(null); setShowForm(true) }} />
-        <Section title={`Plants overview • ${new Date().toLocaleDateString(undefined,{month:'short', day:'numeric'})}`}>
-          <div className="divide-y divide-slate-200/80 rounded-xl overflow-hidden">
-            <div>
-              <button onClick={() => setOpen(o => ({ ...o, today: !o.today }))} className="w-full text-left px-3 md:px-4 py-3 md:py-4 flex items-center justify-between hover:bg-slate-50/60">
-                <div>
-                  <div className="text-xs text-slate-500">Today</div>
-                  <div className="text-2xl font-semibold">{counts.today}</div>
-                </div>
-                <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${open.today ? 'rotate-90' : ''}`} />
-              </button>
-              <AnimatePresence initial={false}>
-                {open.today && (
-                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="px-3 md:px-4 pb-4">
-                    <div className="text-sm text-slate-500 mb-2">Due today or overdue — {counts.today} item(s)</div>
-                    <div className="space-y-2">
-                      {dueToday.map(p => (
-                        <PlantRow key={p.id} p={p} onOpen={setSelected} />
-                      ))}
-                      {dueToday.length === 0 && <div className="text-sm text-slate-500">Nothing due right now.</div>}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            <div>
-              <button onClick={() => setOpen(o => ({ ...o, schedule: !o.schedule }))} className="w-full text-left px-3 md:px-4 py-3 md:py-4 flex items-center justify-between hover:bg-slate-50/60">
-                <div>
-                  <div className="text-xs text-slate-500">Schedule (next 7d)</div>
-                  <div className="text-2xl font-semibold">{counts.schedule}</div>
-                </div>
-                <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${open.schedule ? 'rotate-90' : ''}`} />
-              </button>
-              <AnimatePresence initial={false}>
-                {open.schedule && (
-                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="px-3 md:px-4 pb-4">
-                    <div className="text-sm text-slate-500 mb-2">Upcoming within a week — {counts.schedule} item(s)</div>
-                    <div className="space-y-2">
-                      {upcoming.map(p => (
-                        <PlantRow key={p.id} p={p} onOpen={setSelected} />
-                      ))}
-                      {upcoming.length === 0 && <div className="text-sm text-slate-500">No upcoming watering events in the next 7 days.</div>}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            <div>
-              <button onClick={() => setOpen(o => ({ ...o, notes: !o.notes }))} className="w-full text-left px-3 md:px-4 py-3 md:py-4 flex items-center justify-between hover:bg-slate-50/60">
-                <div>
-                  <div className="text-xs text-slate-500">Notes</div>
-                  <div className="text-2xl font-semibold">{counts.notes}</div>
-                </div>
-                <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${open.notes ? 'rotate-90' : ''}`} />
-              </button>
-              <AnimatePresence initial={false}>
-                {open.notes && (
-                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="px-3 md:px-4 pb-4">
-                    <div className="text-sm text-slate-500 mb-2">Notes for your plants — {counts.notes} item(s)</div>
-                    <div className="space-y-2">
-                      {withNotes.map(p => (
-                        <div key={p.id} className={`p-3 rounded-xl border ${UI.ring}`}>
-                          <div className="font-medium">{p.name}</div>
-                          <div className="text-sm text-slate-600">{p.notes}</div>
-                        </div>
-                      ))}
-                      {withNotes.length === 0 && <div className="text-sm text-slate-500">No notes yet.</div>}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </Section>
-        <Section title="All plants" action={<button onClick={()=>{ setEditing(null); setShowForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add plant</button>}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <Section title="Plants" action={<button onClick={()=>{ setEditing(null); setShowForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-3 py-2 text-sm inline-flex items-center gap-2`}><Plus className="h-4 w-4"/> Add plant</button>}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {plants.map(p => (
-              <div key={p.id} className={`p-4 rounded-2xl border ${UI.ring} ${UI.card}`}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-semibold flex items-center gap-2"><Leaf className="h-4 w-4 text-emerald-600"/>{p.name}</div>
-                    {p.species && <div className="text-sm text-slate-600">{p.species}</div>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={()=>setSelected(p)} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Details</button>
-                    <button onClick={()=>{ setEditing(p); setShowForm(true) }} className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 text-xs`}>Edit</button>
-                    <button onClick={()=> setPlants(arr=> arr.filter(x=> x.id !== p.id))} className="rounded-xl bg-rose-500/90 text-white px-2 py-1 text-xs inline-flex items-center gap-1"><Trash className="h-3 w-3"/> Delete</button>
+              <button key={p.id} onClick={()=> setSelected(p)} className={`p-0 text-left rounded-2xl border ${UI.ring} ${UI.card} overflow-hidden hover:shadow-sm transition`} aria-label={`Open ${p.name}`}>
+                <img src={p.imageUrl || getPlantImage(p)} alt="" className="w-full h-40 object-cover" />
+                <div className="p-4">
+                  <div className="font-semibold flex items-center gap-2"><Leaf className="h-4 w-4 text-emerald-600"/>{p.name}</div>
+                  {p.species && <div className="text-sm text-slate-600 mt-0.5">{p.species}</div>}
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                    <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 flex items-center gap-2`}><Droplet className="h-4 w-4"/> Every {p.frequencyDays}d</div>
+                    <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 flex items-center gap-2`}><Calendar className="h-4 w-4"/> Next {toISODate(nextWaterDate(p))}</div>
                   </div>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                  <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 flex items-center gap-2`}><Droplet className="h-4 w-4"/> Every {p.frequencyDays}d</div>
-                  <div className={`${UI.ring} ${UI.chip} rounded-xl px-2 py-1 flex items-center gap-2`}><Calendar className="h-4 w-4"/> Next {toISODate(nextWaterDate(p))}</div>
-                </div>
-              </div>
+              </button>
             ))}
           </div>
         </Section>
@@ -349,6 +264,16 @@ function PlantForm({ initial, onCancel, onSave }:{ initial?: Partial<Plant>; onC
       </div>
     </motion.aside>
   )
+}
+
+const plantImages: Record<string, string> = {
+  Monstera: 'https://images.unsplash.com/photo-1589227365533-cee630bd59d7?q=80&w=1200&auto=format&fit=crop',
+  'Snake Plant': 'https://images.unsplash.com/photo-1621447504866-5981c3dd2cd6?q=80&w=1200&auto=format&fit=crop',
+  Basil: 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=1200&auto=format&fit=crop',
+  Pothos: 'https://images.unsplash.com/photo-1575635694007-874f5b1178e3?q=80&w=1200&auto=format&fit=crop',
+}
+function getPlantImage(p: Plant): string {
+  return plantImages[p.name] || 'https://images.unsplash.com/photo-1524594227089-14612805ab76?q=80&w=1200&auto=format&fit=crop'
 }
 
 

@@ -3,6 +3,7 @@ import Dashboard from './components/DashboardHeroDailyLucas'
 import Finance from './components/FinanceHeroProgressiveLucas'
 import Plants from './components/PlantsHeroProgressiveLucas'
 import Cleaning from './components/CleaningHeroProgressiveLucas'
+import Shopping from './components/ShoppingHeroProgressiveLucas'
 
 const TabButton: React.FC<{active:boolean; onClick:()=>void; children:React.ReactNode}> = ({active,onClick,children}) => (
   <button
@@ -12,7 +13,7 @@ const TabButton: React.FC<{active:boolean; onClick:()=>void; children:React.Reac
 )
 
 export default function App() {
-  const [tab, setTab] = useState<'dashboard'|'finance'|'plants'|'cleaning'>('dashboard')
+  const [tab, setTab] = useState<'dashboard'|'finance'|'plants'|'cleaning'|'shopping'>('dashboard')
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -22,9 +23,10 @@ export default function App() {
           <TabButton active={tab==='finance'} onClick={()=>setTab('finance')}>Finance</TabButton>
           <TabButton active={tab==='plants'} onClick={()=>setTab('plants')}>Plants</TabButton>
           <TabButton active={tab==='cleaning'} onClick={()=>setTab('cleaning')}>Cleaning</TabButton>
+          <TabButton active={tab==='shopping'} onClick={()=>setTab('shopping')}>Shopping</TabButton>
         </div>
       </div>
-      {tab==='dashboard' ? <Dashboard/> : tab==='finance' ? <Finance/> : tab==='plants' ? <Plants/> : <Cleaning/>}
+      {tab==='dashboard' ? <Dashboard/> : tab==='finance' ? <Finance/> : tab==='plants' ? <Plants/> : tab==='cleaning' ? <Cleaning/> : <Shopping/>}
     </div>
   )
 }
